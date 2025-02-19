@@ -34,8 +34,9 @@ Route::get('assistants/{id}/payment', [AssistantController::class, 'payment'])->
 Route::post('assistants/{id}/complete-payment', [AssistantController::class, 'completePayment'])->name('assistants.completePayment');
 
 // Rutas para PayPal
-Route::post('paypal/create-payment', [PayPalController::class, 'createPayment'])->name('paypal.createPayment');
-Route::get('paypal/capture-payment', [PayPalController::class, 'capturePayment'])->name('paypal.capturePayment');
+Route::post('/paypal/create-payment', [PayPalController::class, 'createPayment'])->name('paypal.createPayment');
+Route::get('/paypal/execute-payment', [PayPalController::class, 'executePayment'])->name('paypal.executePayment');
+Route::get('/paypal/cancel-payment', [PayPalController::class, 'cancelPayment'])->name('paypal.cancelPayment');
 
 // Rutas para el registro de usuarios
 Route::get('register', [RegisteredUserController::class, 'create'])->name('register');

@@ -1,4 +1,3 @@
-<!-- filepath: /D:/Xampp/htdocs/jornadas-de-videojuegos/resources/views/assistants/payment.blade.php -->
 @extends('layouts.app')
 
 @section('content')

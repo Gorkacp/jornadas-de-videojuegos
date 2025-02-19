@@ -1,4 +1,3 @@
-<!-- filepath: /D:/Xampp/htdocs/jornadas-de-videojuegos/resources/views/events/index.blade.php -->
 @extends('layouts.app')
 
 @section('content')
@@ -9,6 +8,11 @@
             {{ session('success') }}
         </div>
     @endif
+
+    @if (auth()->check() && auth()->user()->role == 'admin')
+        <a href="{{ route('events.create') }}" class="btn btn-primary mb-3">Crear Evento</a>
+    @endif
+
     <table class="table">
         <thead>
             <tr>
@@ -31,12 +35,14 @@
                     <td>{{ $event->end_time }}</td>
                     <td>{{ $event->max_attendees }}</td>
                     <td>
-                        <a href="{{ route('events.edit', $event->id) }}" class="btn btn-warning">Editar</a>
-                        <form action="{{ route('events.destroy', $event->id) }}" method="POST" style="display:inline;">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn btn-danger">Eliminar</button>
-                        </form>
+                        @if (auth()->check() && auth()->user()->role == 'admin')
+                            <a href="{{ route('events.edit', $event->id) }}" class="btn btn-warning">Editar</a>
+                            <form action="{{ route('events.destroy', $event->id) }}" method="POST" style="display:inline;">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-danger">Eliminar</button>
+                            </form>
+                        @endif
                     </td>
                 </tr>
             @endforeach
