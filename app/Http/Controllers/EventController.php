@@ -12,7 +12,7 @@ class EventController extends Controller
 {
     public function index()
     {
-        $events = Event::all(); // Cambiar para obtener todos los eventos
+        $events = Event::all(); // Obtiene todos los eventos de la base de datos
         return view('events.index', compact('events'));
     }
 
@@ -125,5 +125,20 @@ class EventController extends Controller
     {
         $event->delete();
         return redirect()->route('events.index')->with('success', 'Evento eliminado exitosamente.');
+    }
+    public function earnings()
+    {
+        $events = Event::all();
+        $earnings = 0;
+
+        foreach ($events as $event) {
+            if ($event->type == 'Presencial') {
+                $earnings += $event->registrations->count() * 5;
+            } elseif ($event->type == 'Virtual') {
+                $earnings += $event->registrations->count() * 9;
+            }
+        }
+
+        return view('events.earnings', compact('earnings'));
     }
 }

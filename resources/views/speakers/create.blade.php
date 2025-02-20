@@ -1,3 +1,4 @@
+<!-- filepath: /D:/Xampp/htdocs/jornadas-de-videojuegos/resources/views/speakers/create.blade.php -->
 @extends('layouts.app')
 
 @section('content')
@@ -18,8 +19,16 @@
             <textarea name="expertise" id="expertise" class="form-control" required></textarea>
         </div>
         <div class="form-group">
-            <label for="social_links">Redes Sociales</label>
-            <input type="text" name="social_links" id="social_links" class="form-control">
+            <label for="social_links[facebook]">Facebook</label>
+            <input type="url" name="social_links[facebook]" id="social_links[facebook]" class="form-control">
+        </div>
+        <div class="form-group">
+            <label for="social_links[twitter]">Twitter</label>
+            <input type="url" name="social_links[twitter]" id="social_links[twitter]" class="form-control">
+        </div>
+        <div class="form-group">
+            <label for="social_links[instagram]">Instagram</label>
+            <input type="url" name="social_links[instagram]" id="social_links[instagram]" class="form-control">
         </div>
         <button type="submit" class="btn btn-primary">Crear</button>
     </form>

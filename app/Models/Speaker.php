@@ -16,6 +16,10 @@ class Speaker extends Model
         'social_links',
     ];
 
+    protected $casts = [
+        'social_links' => 'array',
+    ];
+
     public function events()
     {
         return $this->belongsToMany(Event::class, 'event_speakers');

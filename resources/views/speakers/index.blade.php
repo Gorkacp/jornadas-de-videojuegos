@@ -3,11 +3,7 @@
 @section('content')
 <div class="container">
     <h1>Ponentes</h1>
-    @auth
-        @if (Auth::user()->role === 'admin')
-            <a href="{{ route('speakers.create') }}" class="btn btn-primary">Crear Ponente</a>
-        @endif
-    @endauth
+    <a href="{{ route('speakers.create') }}" class="btn btn-success mb-3">Crear Ponente</a>
     <table class="table">
         <thead>
             <tr>
@@ -15,32 +11,48 @@
                 <th>Foto</th>
                 <th>Experiencia</th>
                 <th>Redes Sociales</th>
-                @auth
-                    @if (Auth::user()->role === 'admin')
-                        <th>Acciones</th>
-                    @endif
-                @endauth
+                <th>Acciones</th>
             </tr>
         </thead>
         <tbody>
-            @foreach ($speakers as $speaker)
+            @foreach($speakers as $speaker)
                 <tr>
                     <td>{{ $speaker->name }}</td>
-                    <td><img src="{{ asset('storage/' . $speaker->photo) }}" alt="{{ $speaker->name }}" width="100"></td>
-                    <td>{{ $speaker->expertise }}</td>
-                    <td>{{ $speaker->social_links }}</td>
-                    @auth
-                        @if (Auth::user()->role === 'admin')
-                            <td>
-                                <a href="{{ route('speakers.edit', $speaker->id) }}" class="btn btn-warning">Editar</a>
-                                <form action="{{ route('speakers.destroy', $speaker->id) }}" method="POST" style="display:inline;">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-danger">Eliminar</button>
-                                </form>
-                            </td>
+                    <td>
+                        @if($speaker->photo)
+                            <img src="{{ asset('storage/' . $speaker->photo) }}" alt="{{ $speaker->name }}" width="50">
                         @endif
-                    @endauth
+                    </td>
+                    <td>{{ $speaker->expertise }}</td>
+                    <td>
+                        @if(is_array($speaker->social_links))
+                            @foreach($speaker->social_links as $platform => $link)
+                                @if($link)
+                                    <a href="{{ $link }}" target="_blank" class="btn btn-link">
+                                        @if($platform == 'facebook')
+                                            Facebook
+                                        @elseif($platform == 'twitter')
+                                            Twitter
+                                        @elseif($platform == 'instagram')
+                                            Instagram
+                                        @else
+                                            {{ ucfirst($platform) }}
+                                        @endif
+                                    </a><br>
+                                @endif
+                            @endforeach
+                        @else
+                            {{ $speaker->social_links }}
+                        @endif
+                    </td>
+                    <td>
+                        <a href="{{ route('speakers.edit', $speaker->id) }}" class="btn btn-primary">Editar</a>
+                        <form action="{{ route('speakers.destroy', $speaker->id) }}" method="POST" style="display:inline;">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-danger">Eliminar</button>
+                        </form>
+                    </td>
                 </tr>
             @endforeach
         </tbody>

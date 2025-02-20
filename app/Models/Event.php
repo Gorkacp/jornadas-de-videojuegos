@@ -17,7 +17,7 @@ class Event extends Model
         'end_time',
         'max_attendees',
         'speaker_id',
-        'user_id', // Añadir el campo user_id
+        'user_id', 
     ];
 
     protected $dates = [
@@ -48,5 +48,10 @@ class Event extends Model
     public function isFull()
     {
         return $this->available_capacity <= 0;
+    }
+
+    public function registrations()
+    {
+        return $this->hasMany(Registration::class);
     }
 }
