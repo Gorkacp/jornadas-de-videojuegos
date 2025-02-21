@@ -25,12 +25,9 @@ class PaymentReceipt extends Notification
     public function toMail($notifiable)
     {
         return (new MailMessage)
-                    ->subject('Comprobante de Pago')
-                    ->greeting('Hola ' . $this->assistant->name)
-                    ->line('Gracias por registrarte en el evento: ' . $this->assistant->event->title)
-                    ->line('Tipo de Asistencia: ' . ucfirst($this->assistant->attendance_type))
-                    ->line('Adjunto encontrarás tu ticket de entrada.')
+                    ->line('Hemos recibido tu pago para el evento: ' . $this->assistant->event->title)
+                    ->line('Factura pagada: €' . number_format($this->assistant->event->price, 2))
                     ->action('Ver Evento', url('/events/' . $this->assistant->event->id))
-                    ->line('Gracias por tu participación!');
+                    ->line('Gracias por tu pago!');
     }
 }

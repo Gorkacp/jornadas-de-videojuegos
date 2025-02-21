@@ -24,6 +24,7 @@ Route::middleware('auth')->group(function () {
 
 // Rutas para eventos
 Route::resource('events', EventController::class);
+Route::get('events/earnings', [EventController::class, 'earnings'])->name('events.earnings');
 
 // Rutas para ponentes
 Route::resource('speakers', SpeakerController::class);
@@ -31,12 +32,7 @@ Route::resource('speakers', SpeakerController::class);
 // Rutas para asistentes
 Route::resource('assistants', AssistantController::class);
 Route::get('assistants/{id}/payment', [AssistantController::class, 'payment'])->name('assistants.payment');
-Route::post('assistants/{id}/complete-payment', [AssistantController::class, 'completePayment'])->name('assistants.completePayment');
-
-// Rutas para PayPal
-Route::post('/paypal/create-payment', [PayPalController::class, 'createPayment'])->name('paypal.createPayment');
-Route::get('/paypal/execute-payment', [PayPalController::class, 'executePayment'])->name('paypal.executePayment');
-Route::get('/paypal/cancel-payment', [PayPalController::class, 'cancelPayment'])->name('paypal.cancelPayment');
+Route::post('assistants/process-payment', [AssistantController::class, 'processPayment'])->name('assistants.processPayment');
 
 // Rutas para el registro de usuarios
 Route::get('register', [RegisteredUserController::class, 'create'])->name('register');

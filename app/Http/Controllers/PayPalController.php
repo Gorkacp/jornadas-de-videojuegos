@@ -11,10 +11,7 @@ use PayPal\Api\RedirectUrls;
 use PayPal\Api\Transaction;
 use PayPal\Auth\OAuthTokenCredential;
 use PayPal\Rest\ApiContext;
-use Illuminate\Support\Facades\Session;
-use Illuminate\Support\Facades\URL;
-use App\Models\Assistant;
-use App\Notifications\PaymentReceipt;
+use PayPal\Exception\PayPalConnectionException;
 
 class PayPalController extends Controller
 {
@@ -22,92 +19,69 @@ class PayPalController extends Controller
 
     public function __construct()
     {
-        $paypalConfig = config('paypal');
-
         $this->apiContext = new ApiContext(
             new OAuthTokenCredential(
-                $paypalConfig['client_id'],
-                $paypalConfig['secret']
+                config('paypal.client_id'),
+                config('paypal.secret')
             )
         );
 
-        $this->apiContext->setConfig($paypalConfig['settings']);
+        $this->apiContext->setConfig(config('paypal.settings'));
     }
 
     public function createPayment(Request $request)
-{
-    // Validar que el id del asistente sea válido
-    $request->validate([
-        'assistant_id' => 'required|exists:assistants,id',  // Usamos el campo 'id' de la tabla assistants
-    ]);
+    {
+        $request->validate([
+            'total' => 'required|numeric|min:0.01',
+        ]);
 
-    $assistant = Assistant::findOrFail($request->assistant_id); // Buscar el asistente por el id
+        $payer = new Payer();
+        $payer->setPaymentMethod('paypal');
 
-    // Definir la cantidad a pagar
-    $amount = new Amount();
-    $amount->setCurrency('USD')->setTotal(10.00); // Cambia el total a lo que corresponda
+        $amount = new Amount();
+        $amount->setTotal(number_format($request->total, 2, '.', ''));
+        $amount->setCurrency('USD');
 
-    // Crear la transacción
-    $transaction = new Transaction();
-    $transaction->setAmount($amount)
-                ->setDescription('Pago para evento: ' . $assistant->event->title);
+        $transaction = new Transaction();
+        $transaction->setAmount($amount);
+        $transaction->setDescription('Payment description');
 
-    // Payer (quien hace el pago)
-    $payer = new Payer();
-    $payer->setPaymentMethod('paypal');
+        $redirectUrls = new RedirectUrls();
+        $redirectUrls->setReturnUrl(route('paypal.executePayment'))
+                     ->setCancelUrl(route('paypal.cancelPayment'));
 
-    // Direcciones de redirección
-    $redirectUrls = new RedirectUrls();
-    $redirectUrls->setReturnUrl(route('paypal.executePayment', ['assistant_id' => $assistant->id]))  // Usamos el id del asistente en la ruta
-                 ->setCancelUrl(route('paypal.cancelPayment'));
+        $payment = new Payment();
+        $payment->setIntent('sale')
+                ->setPayer($payer)
+                ->setTransactions([$transaction])
+                ->setRedirectUrls($redirectUrls);
 
-    // Crear el pago
-    $payment = new Payment();
-    $payment->setIntent('sale')
-            ->setPayer($payer)
-            ->setTransactions([$transaction])
-            ->setRedirectUrls($redirectUrls);
-
-    try {
-        $payment->create($this->apiContext);  // Usar el apiContext configurado
-
-        return redirect()->away($payment->getApprovalLink()); // Redirigir a PayPal para autorizar el pago
-    } catch (\Exception $ex) {
-        return back()->withErrors(['error' => 'Hubo un error al crear el pago. ' . $ex->getMessage()]);
+        try {
+            $payment->create($this->apiContext);
+            return redirect()->away($payment->getApprovalLink());
+        } catch (PayPalConnectionException $ex) {
+            return redirect()->route('events.index')->with('error', 'Some error occurred, please try again later.');
+        }
     }
-}
 
+    public function executePayment(Request $request)
+    {
+        $paymentId = $request->paymentId;
+        $payment = Payment::get($paymentId, $this->apiContext);
 
-public function executePayment(Request $request)
-{
-    // Verificamos que el id del asistente esté presente
-    $request->validate([
-        'assistant_id' => 'required|exists:assistants,id',  // Validar que el id existe en la tabla
-    ]);
+        $execution = new PaymentExecution();
+        $execution->setPayerId($request->PayerID);
 
-    $paymentId = $request->paymentId;
-    $payerId = $request->PayerID;
-    $assistantId = $request->assistant_id;  // Usamos el id del asistente aquí
-
-    $payment = Payment::get($paymentId, $this->apiContext);
-
-    $execution = new PaymentExecution();
-    $execution->setPayerId($payerId);
-
-    try {
-        $result = $payment->execute($execution, $this->apiContext);
-
-        // Marcar el pago como completado en tu base de datos
-        $assistant = Assistant::findOrFail($assistantId); // Buscamos el asistente por el id
-        $assistant->payment_status = 'completed';
-        $assistant->save();
-
-        // Enviar notificación de comprobante de pago
-        $assistant->notify(new PaymentReceipt($assistant));
-
-        return redirect()->route('assistants.index')->with('success', 'Pago completado exitosamente.');
-    } catch (\Exception $ex) {
-        return back()->withErrors(['error' => 'Hubo un error al procesar el pago: ' . $ex->getMessage()]);
+        try {
+            $result = $payment->execute($execution, $this->apiContext);
+            return redirect()->route('events.index')->with('success', 'Payment successful');
+        } catch (PayPalConnectionException $ex) {
+            return redirect()->route('events.index')->with('error', 'Payment failed');
+        }
     }
-   } 
+
+    public function cancelPayment()
+    {
+        return redirect()->route('events.index')->with('error', 'Payment cancelled');
+    }
 }

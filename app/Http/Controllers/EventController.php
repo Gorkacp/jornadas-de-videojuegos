@@ -7,12 +7,13 @@ use App\Models\Speaker;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Payment;
 
 class EventController extends Controller
 {
     public function index()
     {
-        $events = Event::all(); // Obtiene todos los eventos de la base de datos
+        $events = Event::all();
         return view('events.index', compact('events'));
     }
 
@@ -63,7 +64,10 @@ class EventController extends Controller
             return redirect()->back()->withErrors(['start_time' => 'No pueden superponerse dos conferencias o dos talleres simultáneamente.'])->withInput();
         }
 
-        Event::create(array_merge($request->all(), ['user_id' => Auth::id()]));
+        // Asignar precio basado en el tipo de evento
+        $price = $request->type == 'workshop' ? 10.00 : 5.00;
+
+        Event::create(array_merge($request->all(), ['user_id' => Auth::id(), 'price' => $price]));
 
         return redirect()->route('events.index')->with('success', 'Evento creado exitosamente.');
     }
@@ -116,7 +120,10 @@ class EventController extends Controller
             return redirect()->back()->withErrors(['start_time' => 'No pueden superponerse dos conferencias o dos talleres simultáneamente.'])->withInput();
         }
 
-        $event->update($request->all());
+        // Asignar precio basado en el tipo de evento
+        $price = $request->type == 'workshop' ? 10.00 : 5.00;
+
+        $event->update(array_merge($request->all(), ['price' => $price]));
 
         return redirect()->route('events.index')->with('success', 'Evento actualizado exitosamente.');
     }
@@ -126,19 +133,6 @@ class EventController extends Controller
         $event->delete();
         return redirect()->route('events.index')->with('success', 'Evento eliminado exitosamente.');
     }
-    public function earnings()
-    {
-        $events = Event::all();
-        $earnings = 0;
 
-        foreach ($events as $event) {
-            if ($event->type == 'Presencial') {
-                $earnings += $event->registrations->count() * 5;
-            } elseif ($event->type == 'Virtual') {
-                $earnings += $event->registrations->count() * 9;
-            }
-        }
-
-        return view('events.earnings', compact('earnings'));
-    }
+    'payment_status',
 }

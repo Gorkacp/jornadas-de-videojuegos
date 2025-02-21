@@ -19,6 +19,7 @@ return new class extends Migration
             $table->dateTime('start_time');
             $table->dateTime('end_time');
             $table->unsignedInteger('max_attendees');
+            $table->decimal('price', 8, 2); // Asegúrate de que la columna price esté definida
             $table->unsignedBigInteger('speaker_id');
             $table->foreign('speaker_id')->references('id')->on('speakers')->onDelete('cascade');
             $table->unsignedBigInteger('user_id'); 

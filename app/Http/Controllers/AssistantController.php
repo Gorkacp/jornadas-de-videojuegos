@@ -6,8 +6,8 @@ use App\Models\Assistant;
 use App\Models\Event;
 use App\Models\User;
 use App\Notifications\EventRegistrationNotification;
-use App\Notifications\RegistrationConfirmation;
 use App\Notifications\PaymentReceipt;
+use App\Models\Payment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -26,80 +26,80 @@ class AssistantController extends Controller
     }
 
     public function store(Request $request)
-{
-    $request->validate([
-        'name' => 'required|string|max:255',
-        'email' => 'required|string|email|max:255',
-        'event_id' => 'required|exists:events,id',
-        'attendance_type' => 'required|in:presencial,virtual,gratuita',
-    ]);
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255',
+            'event_id' => 'required|exists:events,id',
+            'attendance_type' => 'required|in:presencial,virtual,gratuita',
+        ]);
 
-    // Verificar si el correo electrónico está registrado en la base de datos de usuarios
-    $user = User::where('email', $request->email)->first();
-    if (!$user) {
-        return redirect()->back()->withErrors(['email' => 'Este correo electrónico no está registrado en la base de datos.'])->withInput();
+        // Verificar si el correo electrónico está registrado en la base de datos de usuarios
+        $user = User::where('email', $request->email)->first();
+        if (!$user) {
+            return redirect()->back()->withErrors(['email' => 'Este correo electrónico no está registrado en la base de datos.'])->withInput();
+        }
+
+        // Validación personalizada para correos electrónicos de estudiantes
+        if ($request->attendance_type === 'gratuita' && !str_ends_with($request->email, '@iesalpujarra.org')) {
+            return redirect()->back()->withErrors(['email' => 'No cumples los requisitos de estudiante.'])->withInput();
+        }
+
+        $event = Event::find($request->event_id);
+
+        // Verificar si el evento está lleno
+        if ($event->isFull()) {
+            return redirect()->back()->withErrors(['event_id' => 'El evento está lleno.'])->withInput();
+        }
+
+        // Verificar si el usuario ya está registrado en el evento
+        $existingAssistant = Assistant::where('email', $request->email)
+            ->where('event_id', $request->event_id)
+            ->first();
+
+        if ($existingAssistant) {
+            return redirect()->back()->withErrors(['email' => 'Ya estás registrado en este evento.'])->withInput();
+        }
+
+        // Verificar el número de conferencias y talleres registrados
+        $conferenceCount = Assistant::where('user_id', $user->id)
+            ->whereHas('event', function ($query) {
+                $query->where('type', 'conference');
+            })
+            ->count();
+
+        $workshopCount = Assistant::where('user_id', $user->id)
+            ->whereHas('event', function ($query) {
+                $query->where('type', 'workshop');
+            })
+            ->count();
+
+        if ($event->type == 'conference' && $conferenceCount >= 5) {
+            return redirect()->back()->withErrors(['event_id' => 'No puedes registrarte en más de 5 conferencias.'])->withInput();
+        }
+
+        if ($event->type == 'workshop' && $workshopCount >= 4) {
+            return redirect()->back()->withErrors(['event_id' => 'No puedes registrarte en más de 4 talleres.'])->withInput();
+        }
+
+        $assistant = Assistant::create([
+            'user_id' => $user->id,
+            'event_id' => $request->event_id,
+            'name' => $request->name,
+            'email' => $request->email,
+            'attendance_type' => $request->attendance_type,
+        ]);
+
+        // Enviar notificación de confirmación de registro
+        $assistant->notify(new EventRegistrationNotification($assistant));
+
+        // Redirigir a la página de pago si no es gratuita
+        if ($request->attendance_type !== 'gratuita') {
+            return redirect()->route('assistants.payment', $assistant->id);
+        }
+
+        return redirect()->route('assistants.index')->with('success', 'Registrado exitosamente.');
     }
-
-    // Validación personalizada para correos electrónicos de estudiantes
-    if ($request->attendance_type === 'gratuita' && !str_ends_with($request->email, '@iesalpujarra.org')) {
-        return redirect()->back()->withErrors(['email' => 'No cumples los requisitos de estudiante.'])->withInput();
-    }
-
-    $event = Event::find($request->event_id);
-
-    // Verificar si el evento está lleno
-    if ($event->isFull()) {
-        return redirect()->back()->withErrors(['event_id' => 'El evento está lleno.'])->withInput();
-    }
-
-    // Verificar si el usuario ya está registrado en el evento
-    $existingAssistant = Assistant::where('email', $request->email)
-        ->where('event_id', $request->event_id)
-        ->first();
-
-    if ($existingAssistant) {
-        return redirect()->back()->withErrors(['email' => 'Ya estás registrado en este evento.'])->withInput();
-    }
-
-    // Verificar el número de conferencias y talleres registrados
-    $conferenceCount = Assistant::where('user_id', $user->id)
-        ->whereHas('event', function ($query) {
-            $query->where('type', 'conference');
-        })
-        ->count();
-
-    $workshopCount = Assistant::where('user_id', $user->id)
-        ->whereHas('event', function ($query) {
-            $query->where('type', 'workshop');
-        })
-        ->count();
-
-    if ($event->type == 'conference' && $conferenceCount >= 5) {
-        return redirect()->back()->withErrors(['event_id' => 'No puedes registrarte en más de 5 conferencias.'])->withInput();
-    }
-
-    if ($event->type == 'workshop' && $workshopCount >= 4) {
-        return redirect()->back()->withErrors(['event_id' => 'No puedes registrarte en más de 4 talleres.'])->withInput();
-    }
-
-    $assistant = Assistant::create([
-        'user_id' => $user->id,
-        'event_id' => $request->event_id,
-        'name' => $request->name,
-        'email' => $request->email,
-        'attendance_type' => $request->attendance_type,
-    ]);
-
-    // Enviar notificación de confirmación de registro
-    $assistant->notify(new EventRegistrationNotification($assistant));
-
-    // Redirigir a la página de pago si no es gratuita
-    if ($request->attendance_type !== 'gratuita') {
-        return redirect()->route('assistants.payment', $assistant->id);
-    }
-
-    return redirect()->route('assistants.index')->with('success', 'Registrado exitosamente.');
-}
 
     public function show($id)
     {
@@ -158,5 +158,28 @@ class AssistantController extends Controller
         $assistant->notify(new PaymentReceipt($assistant));
 
         return redirect()->route('assistants.index')->with('success', 'Pago completado exitosamente.');
+    }
+
+    public function processPayment(Request $request)
+    {
+        $request->validate([
+            'assistant_id' => 'required|exists:assistants,id',
+            'total' => 'required|numeric|min:0.01',
+        ]);
+
+        $assistant = Assistant::find($request->assistant_id);
+
+        // Registrar el pago en la base de datos
+        Payment::create([
+            'user_id' => $assistant->user_id,
+            'amount' => $request->total,
+            'payment_method' => 'Simulated',
+            'payment_status' => 'Completed',
+        ]);
+
+        // Enviar notificación de comprobante de pago
+        $assistant->notify(new PaymentReceipt($assistant));
+
+        return redirect()->route('events.index')->with('success', 'Pago realizado exitosamente.');
     }
 }

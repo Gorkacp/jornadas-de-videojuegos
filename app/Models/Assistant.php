@@ -16,6 +16,7 @@ class Assistant extends Model
         'name',
         'email',
         'attendance_type',
+        'payment_status',
     ];
 
     public function user()

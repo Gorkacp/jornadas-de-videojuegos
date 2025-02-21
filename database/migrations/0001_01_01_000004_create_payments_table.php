@@ -10,7 +10,7 @@ class CreatePaymentsTable extends Migration
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained();
-            $table->decimal('amount', 10, 2);
+            $table->decimal('amount', 8, 2);
             $table->enum('payment_method', ['paypal']);
             $table->enum('payment_status', ['completed', 'pending', 'failed']);
             $table->timestamps();
