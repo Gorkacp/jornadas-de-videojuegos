@@ -24,7 +24,6 @@ Route::middleware('auth')->group(function () {
 
 // Rutas para eventos
 Route::resource('events', EventController::class);
-Route::get('events/earnings', [EventController::class, 'earnings'])->name('events.earnings');
 
 // Rutas para ponentes
 Route::resource('speakers', SpeakerController::class);

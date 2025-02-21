@@ -57,7 +57,6 @@
                 <a href="{{ route('assistants.index') }}" class="btn btn-info">Mis Eventos Registrados</a>
                 @if(Auth::user()->role == 'admin')
                     <a href="{{ route('usuario.index') }}" class="btn btn-warning">Gestión de Usuarios</a>
-                    <a href="{{ route('events.earnings') }}" class="btn btn-success">Ver Ganancias</a>
                 @endif
             @endauth
         </div>
