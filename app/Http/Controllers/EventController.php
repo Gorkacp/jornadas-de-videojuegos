@@ -134,5 +134,11 @@ class EventController extends Controller
         return redirect()->route('events.index')->with('success', 'Evento eliminado exitosamente.');
     }
 
-    'payment_status',
+    public function earnings()
+    {
+        // Calcular las ganancias basadas en los pagos realizados
+        $earnings = Payment::where('payment_status', 'Completed')->sum('amount');
+
+        return view('events.earnings', compact('earnings'));
+    }
 }

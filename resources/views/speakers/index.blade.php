@@ -1,9 +1,12 @@
+
 @extends('layouts.app')
 
 @section('content')
 <div class="container">
     <h1>Ponentes</h1>
-    <a href="{{ route('speakers.create') }}" class="btn btn-success mb-3">Crear Ponente</a>
+    @if(Auth::user()->role == 'admin')
+        <a href="{{ route('speakers.create') }}" class="btn btn-success mb-3">Crear Ponente</a>
+    @endif
     <table class="table">
         <thead>
             <tr>
@@ -46,12 +49,14 @@
                         @endif
                     </td>
                     <td>
-                        <a href="{{ route('speakers.edit', $speaker->id) }}" class="btn btn-primary">Editar</a>
-                        <form action="{{ route('speakers.destroy', $speaker->id) }}" method="POST" style="display:inline;">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn btn-danger">Eliminar</button>
-                        </form>
+                        @if(Auth::user()->role == 'admin')
+                            <a href="{{ route('speakers.edit', $speaker->id) }}" class="btn btn-primary">Editar</a>
+                            <form action="{{ route('speakers.destroy', $speaker->id) }}" method="POST" style="display:inline;">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-danger">Eliminar</button>
+                            </form>
+                        @endif
                     </td>
                 </tr>
             @endforeach
