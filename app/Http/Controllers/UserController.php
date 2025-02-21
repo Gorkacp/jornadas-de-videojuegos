@@ -34,6 +34,7 @@ class UserController extends Controller
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
             'is_student' => 'boolean',
+            'role' => 'required|string|in:user,admin',
         ]);
 
         $this->userRepository->create([
@@ -41,6 +42,7 @@ class UserController extends Controller
             'email' => $request->email,
             'password' => bcrypt($request->password),
             'is_student' => $request->is_student,
+            'role' => $request->role,
         ]);
 
         return redirect()->route('usuario.index');
@@ -65,6 +67,7 @@ class UserController extends Controller
             'email' => 'required|string|email|max:255|unique:users,email,' . $id,
             'password' => 'nullable|string|min:8|confirmed',
             'is_student' => 'boolean',
+            'role' => 'required|string|in:user,admin',
         ]);
 
         $user = $this->userRepository->find($id);
@@ -74,6 +77,7 @@ class UserController extends Controller
             'email' => $request->email,
             'password' => $request->password ? bcrypt($request->password) : $user->password,
             'is_student' => $request->is_student,
+            'role' => $request->role,
         ]);
 
         return redirect()->route('usuario.index');
